@@ -5,9 +5,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
+import pl.bgn.currencies.data.Model
 import pl.bgn.currencies.databinding.RecyclerviewItemBinding
 
-class RecyclerViewAdapter(private val currencies: ArrayList<Model.Rates>) :
+class RecyclerViewAdapter(private val currencies: ArrayList<Model.Currency>) :
     RecyclerView.Adapter<RecyclerViewAdapter.CurrencyHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerViewAdapter.CurrencyHolder {
@@ -17,20 +18,19 @@ class RecyclerViewAdapter(private val currencies: ArrayList<Model.Rates>) :
         return CurrencyHolder(binding)
     }
 
-    override fun getItemCount() = /*currencies.size*/ 10
+    override fun getItemCount() = currencies.size
 
     override fun onBindViewHolder(holder: RecyclerViewAdapter.CurrencyHolder, position: Int) {
-//        holder.bind(currencies[position])
-        holder.bind(Model.Rates(2.23))
+        holder.bind(currencies[position])
     }
 
     inner class CurrencyHolder(private val binding: RecyclerviewItemBinding) : RecyclerView.ViewHolder(binding.root), View.OnClickListener {
 
-        fun bind(currency: Model.Rates) {
+        fun bind(currency: Model.Currency) {
             with(binding){
                 countryName.text = "Poland"
-                currencyName.text = "PLN"
-                currencyValue.setText("10")
+                currencyName.text = currency.name
+                currencyValue.setText(currency.rate.toString())
             }
         }
         override fun onClick(v: View?) {

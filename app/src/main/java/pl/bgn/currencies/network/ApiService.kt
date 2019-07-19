@@ -1,7 +1,7 @@
 package pl.bgn.currencies.network
 
 import io.reactivex.Observable
-import pl.bgn.currencies.Model
+import pl.bgn.currencies.data.Model
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
