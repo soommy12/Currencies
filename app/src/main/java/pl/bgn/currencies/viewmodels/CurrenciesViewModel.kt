@@ -1,51 +1,48 @@
-package pl.bgn.currencies
+package pl.bgn.currencies.viewmodels
 
-import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import androidx.databinding.DataBindingUtil
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import pl.bgn.currencies.data.Model
-import pl.bgn.currencies.databinding.ActivityMainBinding
 import pl.bgn.currencies.network.ApiService
+import java.util.concurrent.TimeUnit
 
-class MainActivity : AppCompatActivity() {
+class CurrenciesViewModel : ViewModel() {
 
-    private lateinit var linearLayoutManager: LinearLayoutManager
-    private lateinit var adapter: RecyclerViewAdapter
     private val apiService by lazy { ApiService.create() }
-    var disposable: Disposable? = null
-    val currenciesList: ArrayList<Model.Currency> = ArrayList()
+    val currenciesData: MutableLiveData<List<Model.Currency>> = MutableLiveData()
+    val responderCurrency: MutableLiveData<Model.Responder> = MutableLiveData()
+    private val currenciesList: ArrayList<Model.Currency> = ArrayList()
+    private var disposable: Disposable? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        val binding: ActivityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
-        binding.lifecycleOwner = this
-        linearLayoutManager = LinearLayoutManager(this)
-        disposable = apiService.getLatestCurrencyRate("EUR")
+    init {
+        responderCurrency.value = Model.Responder("EUR", 10.0)
+        disposable = Observable.interval(1000, 1000, TimeUnit.MILLISECONDS)
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                { getCurrencies() },
+                { error -> Log.e("Currencies", "Problem: ${error.message}") })
+    }
+
+    private fun getCurrencies() {
+
+        val observable: Observable<Model.Base> =
+            apiService.getLatestCurrencyRate(responderCurrency.value!!.name)
+        observable
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
-                { result ->
-                    updateCurrencies(result.rates)
-                    adapter = RecyclerViewAdapter(currenciesList)
-                    binding.recyclerView.layoutManager = linearLayoutManager
-                    binding.recyclerView.adapter = adapter
-                    Toast.makeText(this, "NO ELO", Toast.LENGTH_SHORT).show()
-                    Log.e("Currencies", "result: ${result.base} ${result.date} ${result.rates}")
-                },
-                { error ->
-                    Log.e("Currencies", "Problem: ${error.message}")
-                    Toast.makeText(this, "ERR", Toast.LENGTH_SHORT).show() }
-                )
-
+                { result -> handleResult(result) },
+                { error -> Log.e("Currencies", "Problem: ${error.message}") })
     }
 
-    private fun updateCurrencies(rates: Model.Rates) {
+    private fun handleResult(result: Model.Base) {
+        val rates = result.rates
+        currenciesList.clear()
         currenciesList.add(Model.Currency("AUD", rates.AUD))
         currenciesList.add(Model.Currency("BGN", rates.BGN))
         currenciesList.add(Model.Currency("BRL", rates.BRL))
@@ -54,6 +51,7 @@ class MainActivity : AppCompatActivity() {
         currenciesList.add(Model.Currency("CNY", rates.CNY))
         currenciesList.add(Model.Currency("CZK", rates.CZK))
         currenciesList.add(Model.Currency("DKK", rates.DKK))
+        currenciesList.add(Model.Currency("EUR", rates.EUR))
         currenciesList.add(Model.Currency("GBP", rates.GBP))
         currenciesList.add(Model.Currency("HKD", rates.HKD))
         currenciesList.add(Model.Currency("HRK", rates.HRK))
@@ -77,11 +75,13 @@ class MainActivity : AppCompatActivity() {
         currenciesList.add(Model.Currency("TRY", rates.TRY))
         currenciesList.add(Model.Currency("USD", rates.USD))
         currenciesList.add(Model.Currency("ZAR", rates.ZAR))
-        currenciesList.add(Model.Currency("EUR", rates.EUR))
+        for(i in 0 until currenciesList.size - 1)
+            if(currenciesList[i].name == result.base) currenciesList.removeAt(i)
+        currenciesData.value = currenciesList
     }
 
-    override fun onPause() {
-        super.onPause()
+    override fun onCleared() {
         disposable?.dispose()
+        super.onCleared()
     }
 }
