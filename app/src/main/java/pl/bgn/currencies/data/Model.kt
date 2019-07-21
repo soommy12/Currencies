@@ -1,9 +1,6 @@
 package pl.bgn.currencies.data
 
-import java.math.RoundingMode
-import java.text.DecimalFormat
 import java.util.*
-import kotlin.collections.ArrayList
 
 class Model {
     data class Rates(

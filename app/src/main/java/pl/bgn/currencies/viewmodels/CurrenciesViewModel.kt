@@ -15,12 +15,13 @@ class CurrenciesViewModel : ViewModel() {
 
     private val apiService by lazy { ApiService.create() }
     val currenciesData: MutableLiveData<List<Model.Currency>> = MutableLiveData()
-    val responderCurrency: MutableLiveData<Model.Responder> = MutableLiveData()
+//    val responderCurrency: MutableLiveData<Model.Responder> = MutableLiveData()
+    var responderName = "EUR"
     private val currenciesList: ArrayList<Model.Currency> = ArrayList()
     private var disposable: Disposable? = null
 
     init {
-        responderCurrency.value = Model.Responder("EUR", 10.0)
+//        responderCurrency.value = Model.Responder("EUR", 10.0)
         disposable = Observable.interval(1000, 1000, TimeUnit.MILLISECONDS)
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
@@ -31,7 +32,7 @@ class CurrenciesViewModel : ViewModel() {
     private fun getCurrencies() {
 
         val observable: Observable<Model.Base> =
-            apiService.getLatestCurrencyRate(responderCurrency.value!!.name)
+            apiService.getLatestCurrencyRate(responderName)
         observable
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
@@ -77,6 +78,7 @@ class CurrenciesViewModel : ViewModel() {
         currenciesList.add(Model.Currency("ZAR", rates.ZAR))
         for(i in 0 until currenciesList.size - 1)
             if(currenciesList[i].name == result.base) currenciesList.removeAt(i)
+        currenciesData.value = emptyList()
         currenciesData.value = currenciesList
     }
 
