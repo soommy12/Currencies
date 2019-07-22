@@ -15,6 +15,6 @@ class Model {
     )
 
     data class Base(val base: String, val date: Date, val rates: Rates)
-    data class Currency(val name: String, val rate: Double)
+    data class Currency(val name: String, var rate: Double)
     data class Responder(var name: String, var amount: Double)
 }

@@ -1,6 +1,7 @@
 package pl.bgn.currencies.ui
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
@@ -23,6 +24,7 @@ class MainActivity : AppCompatActivity() {
         linearLayoutManager = LinearLayoutManager(this)
         adapter = RecyclerViewAdapter(object : RecyclerViewAdapter.OnItemClickListener {
             override fun onCurrencyResponderChange(responderName: String) {
+                Toast.makeText(this@MainActivity, "clicked: $responderName", Toast.LENGTH_SHORT).show()
                 viewModel.responderName = responderName
             }
         })

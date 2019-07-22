@@ -77,7 +77,10 @@ class CurrenciesViewModel : ViewModel() {
         currenciesList.add(Model.Currency("USD", rates.USD))
         currenciesList.add(Model.Currency("ZAR", rates.ZAR))
         for(i in 0 until currenciesList.size - 1)
-            if(currenciesList[i].name == result.base) currenciesList.removeAt(i)
+            if(currenciesList[i].name == result.base) {
+                currenciesList.removeAt(i)
+                currenciesList.add(0, Model.Currency(result.base, 10.0))
+            }
         currenciesData.value = emptyList()
         currenciesData.value = currenciesList
     }
