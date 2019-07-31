@@ -14,7 +14,7 @@ class Model {
         val TRY: Double, val USD: Double, val ZAR: Double, val EUR: Double
     )
 
-    data class Base(val base: String, val date: Date, val rates: Rates)
+//    data class Base(val base: String, val date: Date, val rates: Rates)
+    data class Base(val base: String, val date: Date, val rates: Map<String, Double>)
     data class Currency(val name: String, var rate: Double)
-    data class Responder(var name: String, var amount: Double)
 }

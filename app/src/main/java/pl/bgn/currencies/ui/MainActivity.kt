@@ -1,12 +1,12 @@
 package pl.bgn.currencies.ui
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.SimpleItemAnimator
 import pl.bgn.currencies.R
 import pl.bgn.currencies.adapters.RecyclerViewAdapter
 import pl.bgn.currencies.databinding.ActivityMainBinding
@@ -23,18 +23,23 @@ class MainActivity : AppCompatActivity() {
         val binding: ActivityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         linearLayoutManager = LinearLayoutManager(this)
         adapter = RecyclerViewAdapter(object : RecyclerViewAdapter.OnItemClickListener {
-            override fun onCurrencyResponderChange(responderName: String) {
-                Toast.makeText(this@MainActivity, "clicked: $responderName", Toast.LENGTH_SHORT).show()
-                viewModel.responderName = responderName
+            override fun onCurrencyResponderChange(position: Int) {
+                binding.recyclerView.scrollToPosition(0)
+                viewModel.onResponderChange(position)
             }
         })
+        bind(binding)
+        viewModel = ViewModelProviders.of(this).get(CurrenciesViewModel::class.java)
+        viewModel.currenciesData.observe(this, Observer { currencies ->
+            currencies?.let { adapter.setCurrencies(it) } })
+        viewModel.responder.observe(this, Observer { responder ->
+            responder?.let { adapter.setResponder(it)} })
+    }
+
+    private fun bind(binding : ActivityMainBinding){
         binding.recyclerView.layoutManager = linearLayoutManager
         binding.lifecycleOwner = this
         binding.recyclerView.adapter = adapter
-        viewModel = ViewModelProviders.of(this).get(CurrenciesViewModel::class.java)
-        viewModel.currenciesData.observe(this, Observer { currencies ->
-            currencies?.let {
-                adapter.setCurrencies(it) }
-        })
+        (binding.recyclerView.itemAnimator as SimpleItemAnimator).supportsChangeAnimations = false
     }
 }

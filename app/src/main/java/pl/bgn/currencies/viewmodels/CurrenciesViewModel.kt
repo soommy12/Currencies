@@ -9,19 +9,24 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import pl.bgn.currencies.data.Model
 import pl.bgn.currencies.network.ApiService
+import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.ArrayList
 
 class CurrenciesViewModel : ViewModel() {
 
     private val apiService by lazy { ApiService.create() }
     val currenciesData: MutableLiveData<List<Model.Currency>> = MutableLiveData()
-//    val responderCurrency: MutableLiveData<Model.Responder> = MutableLiveData()
-    var responderName = "EUR"
+    var responder: MutableLiveData<Model.Currency> = MutableLiveData()
     private val currenciesList: ArrayList<Model.Currency> = ArrayList()
     private var disposable: Disposable? = null
 
     init {
-//        responderCurrency.value = Model.Responder("EUR", 10.0)
+        responder.value = Model.Currency("EUR", 10.0)
+        startInterval()
+    }
+
+    private fun startInterval() {
         disposable = Observable.interval(1000, 1000, TimeUnit.MILLISECONDS)
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
@@ -32,7 +37,7 @@ class CurrenciesViewModel : ViewModel() {
     private fun getCurrencies() {
 
         val observable: Observable<Model.Base> =
-            apiService.getLatestCurrencyRate(responderName)
+            apiService.getLatestCurrencyRate(responder.value!!.name)
         observable
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
@@ -43,44 +48,11 @@ class CurrenciesViewModel : ViewModel() {
 
     private fun handleResult(result: Model.Base) {
         val rates = result.rates
-        currenciesList.clear()
-        currenciesList.add(Model.Currency("AUD", rates.AUD))
-        currenciesList.add(Model.Currency("BGN", rates.BGN))
-        currenciesList.add(Model.Currency("BRL", rates.BRL))
-        currenciesList.add(Model.Currency("CAD", rates.CAD))
-        currenciesList.add(Model.Currency("CHF", rates.CHF))
-        currenciesList.add(Model.Currency("CNY", rates.CNY))
-        currenciesList.add(Model.Currency("CZK", rates.CZK))
-        currenciesList.add(Model.Currency("DKK", rates.DKK))
-        currenciesList.add(Model.Currency("EUR", rates.EUR))
-        currenciesList.add(Model.Currency("GBP", rates.GBP))
-        currenciesList.add(Model.Currency("HKD", rates.HKD))
-        currenciesList.add(Model.Currency("HRK", rates.HRK))
-        currenciesList.add(Model.Currency("HUF", rates.HUF))
-        currenciesList.add(Model.Currency("IDR", rates.IDR))
-        currenciesList.add(Model.Currency("ILS", rates.ILS))
-        currenciesList.add(Model.Currency("INR", rates.INR))
-        currenciesList.add(Model.Currency("JPY", rates.JPY))
-        currenciesList.add(Model.Currency("KRW", rates.KRW))
-        currenciesList.add(Model.Currency("MXN", rates.MXN))
-        currenciesList.add(Model.Currency("MYR", rates.MYR))
-        currenciesList.add(Model.Currency("NOK", rates.NOK))
-        currenciesList.add(Model.Currency("NZD", rates.NZD))
-        currenciesList.add(Model.Currency("PHP", rates.PHP))
-        currenciesList.add(Model.Currency("PLN", rates.PLN))
-        currenciesList.add(Model.Currency("RON", rates.RON))
-        currenciesList.add(Model.Currency("RUB", rates.RUB))
-        currenciesList.add(Model.Currency("SEK", rates.SEK))
-        currenciesList.add(Model.Currency("SGD", rates.SGD))
-        currenciesList.add(Model.Currency("THB", rates.THB))
-        currenciesList.add(Model.Currency("TRY", rates.TRY))
-        currenciesList.add(Model.Currency("USD", rates.USD))
-        currenciesList.add(Model.Currency("ZAR", rates.ZAR))
-        for(i in 0 until currenciesList.size - 1)
-            if(currenciesList[i].name == result.base) {
-                currenciesList.removeAt(i)
-                currenciesList.add(0, Model.Currency(result.base, 10.0))
-            }
+        if(currenciesList.isEmpty()) {
+            currenciesList.add(responder.value!!)
+            for((k,v) in rates) currenciesList.add(Model.Currency(k, v))
+        } else for(i in 1 until currenciesList.size)
+            currenciesList[i].rate = rates[currenciesList[i].name]!! //todo avoid nulls here
         currenciesData.value = emptyList()
         currenciesData.value = currenciesList
     }
@@ -88,5 +60,18 @@ class CurrenciesViewModel : ViewModel() {
     override fun onCleared() {
         disposable?.dispose()
         super.onCleared()
+    }
+
+    fun onResponderChange(position: Int) {
+        disposable?.dispose()
+        val current = currenciesList[position]
+        println("Clicked currency: ${current.name} = ${current.rate}")
+        val newResponder
+                = Model.Currency(current.name, current.rate * responder.value!!.rate)
+        println("The new responder value: ${newResponder.rate}")
+        currenciesList.removeAt(position)
+        currenciesList.add(0, newResponder)
+        responder.value = newResponder
+        startInterval()
     }
 }
