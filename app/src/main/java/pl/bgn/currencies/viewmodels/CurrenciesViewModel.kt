@@ -65,10 +65,8 @@ class CurrenciesViewModel : ViewModel() {
     fun onResponderChange(position: Int) {
         disposable?.dispose()
         val current = currenciesList[position]
-        println("Clicked currency: ${current.name} = ${current.rate}")
         val newResponder
                 = Model.Currency(current.name, current.rate * responder.value!!.rate)
-        println("The new responder value: ${newResponder.rate}")
         currenciesList.removeAt(position)
         currenciesList.add(0, newResponder)
         responder.value = newResponder

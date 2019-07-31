@@ -32,9 +32,7 @@ class RecyclerViewAdapter(val itemClickListener: OnItemClickListener) : Recycler
     }
 
     fun setResponder(responder: Model.Currency) {
-        println("NEW_RESPONDER ${responder.name}")
         this.responder = responder
-//        notifyDataSetChanged()
     }
 
     fun setCurrencies(currencies: List<Model.Currency>) {
@@ -66,7 +64,6 @@ class RecyclerViewAdapter(val itemClickListener: OnItemClickListener) : Recycler
         df.roundingMode = RoundingMode.FLOOR
         if(responder.rate == -1.0) return ""
         if(rate == responder.rate) {
-            println("To responder: ${responder.rate}")
             return df.format(rate)
         }
         val computed: Double = responder.rate * rate
