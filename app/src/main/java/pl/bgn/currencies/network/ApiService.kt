@@ -12,14 +12,13 @@ interface ApiService {
 
     @GET("latest")
     fun getLatestCurrencyRate(@Query("base") base: String): Observable<Model.Base>
-//    fun getLatestCurrencyRate(): Observable<Model.Base>
 
     companion object {
         fun create() : ApiService {
             val retrofit = Retrofit.Builder()
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create())
-                .baseUrl("https://revolut.duckdns.org/")
+                .baseUrl("https://hiring.revolut.codes/api/android/")
                 .build()
             return retrofit.create(ApiService::class.java)
         }

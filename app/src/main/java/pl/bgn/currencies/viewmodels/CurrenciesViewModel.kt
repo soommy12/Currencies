@@ -8,10 +8,9 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import pl.bgn.currencies.data.Model
+import pl.bgn.currencies.getUniqueIdFromCurrencyName
 import pl.bgn.currencies.network.ApiService
-import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
 
 class CurrenciesViewModel : ViewModel() {
 
@@ -27,7 +26,7 @@ class CurrenciesViewModel : ViewModel() {
     }
 
     private fun startInterval() {
-        disposable = Observable.interval(1000, 1000, TimeUnit.MILLISECONDS)
+        disposable = Observable.interval(0, 1000, TimeUnit.MILLISECONDS)
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
                 { getCurrencies() },
@@ -63,13 +62,19 @@ class CurrenciesViewModel : ViewModel() {
     }
 
     fun onResponderChange(position: Int) {
-        disposable?.dispose()
-        val current = currenciesList[position]
-        val newResponder
-                = Model.Currency(current.name, current.rate * responder.value!!.rate)
-        currenciesList.removeAt(position)
-        currenciesList.add(0, newResponder)
-        responder.value = newResponder
-        startInterval()
+        if(position != 0) {
+            disposable?.dispose()
+            val current = currenciesList[position]
+            val newResponder
+                    = Model.Currency(current.name, current.rate * responder.value!!.rate)
+            currenciesList.removeAt(position)
+            currenciesList.add(0, newResponder)
+            responder.value = newResponder
+            startInterval()
+        }
+    }
+
+    fun getCurrencyUniqueId(position: Int): Long {
+        return getUniqueIdFromCurrencyName(currenciesList[position].name)
     }
 }
