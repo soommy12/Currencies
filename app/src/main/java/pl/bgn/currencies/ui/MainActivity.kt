@@ -20,14 +20,17 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        supportActionBar?.hide()
         val binding: ActivityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         linearLayoutManager = LinearLayoutManager(this)
         adapter = SimpleRecyclerViewAdapter(
             object : SimpleRecyclerViewAdapter.OnItemClickListener {
-                override fun getCurrentFirstViewHolder(position: Int): SimpleRecyclerViewAdapter.SimpleViewHolder {
+                override fun getCurrentFirstViewHolder(position: Int): SimpleRecyclerViewAdapter.SimpleViewHolder? {
                     val id = viewModel.getCurrencyUniqueId(0)
                     viewModel.onResponderChange(position)
-                    return binding.recyclerView.findViewHolderForItemId(id) as SimpleRecyclerViewAdapter.SimpleViewHolder
+                    val holder = binding.recyclerView.findViewHolderForItemId(id)
+                    return if(holder == null) null
+                    else holder as SimpleRecyclerViewAdapter.SimpleViewHolder
                 }
             }
         )
@@ -36,10 +39,23 @@ class MainActivity : AppCompatActivity() {
         bind(binding)
 
         viewModel = ViewModelProviders.of(this).get(CurrenciesViewModel::class.java)
-        viewModel.currenciesData.observe(this, Observer { currencies ->
-            currencies?.let { adapter.setCurrencies(it) } })
-        viewModel.responder.observe(this, Observer { responder ->
-            responder?.let { adapter.setResponder(it)} })
+//        viewModel.connectionLiveData.observe(this, Observer {
+//            if(it) viewModel.startInterval()
+//            else {
+//                Toast.makeText(this@MainActivity, "Connection lost!", Toast.LENGTH_SHORT).show()
+//                viewModel.stopFetch()
+//            }
+//        })
+        viewModel.currenciesData.observe(this,
+            Observer {
+                currencies -> currencies?.let { adapter.setCurrencies(it)
+            }
+        })
+        viewModel.responder.observe(this,
+            Observer {
+                responder -> responder?.let { adapter.setResponder(it)
+            }
+        })
     }
 
     private fun bind(binding : ActivityMainBinding){
