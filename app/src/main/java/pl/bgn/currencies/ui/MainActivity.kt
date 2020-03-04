@@ -1,6 +1,8 @@
 package pl.bgn.currencies.ui
 
 import android.os.Bundle
+import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
@@ -17,6 +19,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: CurrenciesViewModel
     private lateinit var linearLayoutManager: LinearLayoutManager
     private lateinit var adapter: SimpleRecyclerViewAdapter
+    private var shouldDisplayErrorMsg = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +49,19 @@ class MainActivity : AppCompatActivity() {
 //                viewModel.stopFetch()
 //            }
 //        })
+//        viewModel.shouldDisplayToast.observe(this, Observer {
+//            if {
+//
+//            }
+//        })
+        viewModel.errorMessage.observe(this, Observer { msg ->
+                msg?.let {
+                    Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
+                    binding.progressBar.visibility = View.GONE
+                    binding.infoText.visibility = View.VISIBLE
+                }
+            }
+        )
         viewModel.currenciesData.observe(this,
             Observer {
                 currencies -> currencies?.let { adapter.setCurrencies(it)
