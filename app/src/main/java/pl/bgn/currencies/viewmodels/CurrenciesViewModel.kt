@@ -2,11 +2,11 @@ package pl.bgn.currencies.viewmodels
 
 import android.app.Application
 import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import pl.bgn.currencies.data.ConnectionLiveData
@@ -24,12 +24,13 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
     val connectionLiveData = ConnectionLiveData(application)
     private val currenciesList: ArrayList<Model.Currency> = ArrayList()
     private var disposable: Disposable? = null
-    val shouldDisplayToast = MutableLiveData<Boolean>()
+    private val disposables = CompositeDisposable()
+    val shouldDisplayCurrencies = MutableLiveData<Boolean>()
     val errorMessage = MutableLiveData<String?>()
 
     init {
         responder.value = Model.Currency("EUR", 10.0)
-        shouldDisplayToast.value = false
+        shouldDisplayCurrencies.value = false
         startInterval()
     }
 
@@ -38,12 +39,7 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
             .observeOn(Schedulers.io())
             .subscribe(
                 { getCurrencies() },
-                { error ->
-                    run {
-                        Log.e("Currencies", "Problem from interval: ${error.localizedMessage}")
-                        disposable?.dispose()
-                    }
-                })
+                { error -> Log.e("Currencies", "Problem from interval: ${error.localizedMessage}") })
     }
 
     private fun getCurrencies() {
@@ -57,11 +53,13 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
                 { result -> handleResult(result) },
                 { error ->
                     run {
-                        shouldDisplayToast.value = true
                         errorMessage.value = ApiError(error).msg
+                        shouldDisplayCurrencies.value = false
                         Log.e("Currencies", "Problem: $error")
                     }
-                }
+                },
+                {},
+                { d -> disposables.add(d) }
             )
     }
 
@@ -74,7 +72,7 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
             currenciesList[i].rate = rates.getValue(currenciesList[i].name)
         currenciesData.value = null // to avoid double observer calls
         currenciesData.value = currenciesList
-        shouldDisplayToast.value = false
+        shouldDisplayCurrencies.value = true
     }
 
     override fun onCleared() {
@@ -98,7 +96,8 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
     fun getCurrencyUniqueId(position: Int) = currenciesData.value?.get(position)!!.id
 
     fun stopFetch() {
+        println("stopFetch()")
+        disposables.clear()
         disposable?.dispose()
-//        disposables.clear()
     }
 }

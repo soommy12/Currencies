@@ -1,6 +1,7 @@
 package pl.bgn.currencies.ui
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -42,33 +43,30 @@ class MainActivity : AppCompatActivity() {
         bind(binding)
 
         viewModel = ViewModelProviders.of(this).get(CurrenciesViewModel::class.java)
-//        viewModel.connectionLiveData.observe(this, Observer {
-//            if(it) viewModel.startInterval()
-//            else {
-//                Toast.makeText(this@MainActivity, "Connection lost!", Toast.LENGTH_SHORT).show()
-//                viewModel.stopFetch()
-//            }
-//        })
-//        viewModel.shouldDisplayToast.observe(this, Observer {
-//            if {
-//
-//            }
-//        })
-        viewModel.errorMessage.observe(this, Observer { msg ->
-                msg?.let {
-                    Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
-                    binding.progressBar.visibility = View.GONE
-                    binding.infoText.visibility = View.VISIBLE
+        viewModel.connectionLiveData.observe(this, Observer {
+            if(viewModel.shouldDisplayCurrencies.value == true && it) {
+                Toast.makeText(this@MainActivity, "Connected", Toast.LENGTH_SHORT).show()
+                viewModel.startInterval()
+            }
+            else if(viewModel.shouldDisplayCurrencies.value == true){
+                Toast.makeText(this@MainActivity, "Connection lost!", Toast.LENGTH_SHORT).show()
+                viewModel.stopFetch()
+            }
+        })
+        viewModel.shouldDisplayCurrencies.observe(this, Observer {
+            with(binding) {
+                if(it) {
+                    infoText.visibility = View.GONE
+                    progressBar.visibility = View.GONE
+                    recyclerView.visibility = View.VISIBLE
                 }
             }
-        )
-        viewModel.currenciesData.observe(this,
-            Observer {
+        })
+        viewModel.currenciesData.observe(this, Observer {
                 currencies -> currencies?.let { adapter.setCurrencies(it)
             }
         })
-        viewModel.responder.observe(this,
-            Observer {
+        viewModel.responder.observe(this, Observer {
                 responder -> responder?.let { adapter.setResponder(it)
             }
         })
