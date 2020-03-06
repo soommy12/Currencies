@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.Toast
 
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
@@ -30,6 +31,8 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
 
     private var currencies = emptyList<Model.Currency>()
     private lateinit var responder: Model.Currency
+    var isConnected = true
+
 
     fun setCurrencies(currencies: List<Model.Currency>) {
         this.currencies = currencies
@@ -37,7 +40,6 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
     }
 
     fun setResponder(responder: Model.Currency) {
-        println("setResponder()")
         this.responder = responder
         notifyItemRangeChanged(1, currencies.size - 1)
     }
@@ -61,10 +63,10 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
                         binding.editText.setText("0")
                     }
                     else {
-                        responder.rate = setupResponderValue(s.toString())
+//                        responder.rate = setupResponderValue(s.toString())
                         binding.editText.setText(setupEditTextValue(s))
                     }
-//                    notifyItemRangeChanged(1, currencies.size - 1)
+                    notifyItemRangeChanged(1, currencies.size - 1)
                     binding.editText.setCursorAtEnd()
                     shouldIgnore = false
                 }
@@ -75,7 +77,8 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
 
         inner class CurrencyInputFilter: InputFilter {
 
-            private val pattern: Pattern = Pattern.compile("[0-9]{0,8}+((\\.[0-9]?)?)||(\\.)?")
+            private val pattern: Pattern = Pattern.compile("[0-9]{0,8}((\\.[0-9]?)?)|(\\.)?")
+//            private val pattern: Pattern = Pattern.compile("[0-9]{0,8}((\\.?[0-9]{0,2})?)|(\\.)?")
 
             override fun filter(
                 source: CharSequence?,
@@ -91,6 +94,18 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
         }
 
         private fun setupResponderValue(str: String): Double {
+//            var retStr = str.replace(",", ".")
+//            if(retStr.contains(".")) {
+//                var substr = retStr.substringAfter(".")
+//
+//            }
+//            while (retStr[retStr.length - 2].toString() != ".") {
+//                println("retStr: $retStr")
+//                println("Str: ${retStr[str.length - 1]}")
+//                println("Str: ${retStr[str.length - 2]}")
+//                retStr = retStr.dropLast(1)
+//            }
+//            return retStr.toDouble()
             return str.replace(",", ".").toDouble()
         }
 
@@ -107,17 +122,13 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
             if(name == responder.name) {
                 computedCurrency = computeCurrency(responder.rate)
                 binding.editText.apply {
-                    println("bind() for $name")
                     setText(computedCurrency)
-                    println("ADDING textWatcher for ${binding.currencyName.text} from binding first item")
                     addTextChangedListener(textWatcher)
-//                    filters = arrayOf(CurrencyInputFilter())
                 }
             } else {
                 computedCurrency = computeCurrency(rate)
                 binding.editText.apply {
                     setText(computedCurrency)
-//                    filters = arrayOf()
                 }
             }
             binding.editText.apply {
@@ -157,17 +168,22 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
 
         override fun onClick(v: View?) {
             if(v !is EditText) binding.editText.setCursorAtEnd()
-            moveOnClick(
-                adapterPosition, this,
-                clickListener.getCurrentFirstViewHolder(adapterPosition))
+            when {
+                isConnected -> moveOnClick(
+                    adapterPosition, this,
+                    clickListener.getCurrentFirstViewHolder(adapterPosition, binding.editText.text.toString()))
+                adapterPosition != 0 -> {
+                    Toast.makeText(binding.root.context, R.string.no_connection, Toast.LENGTH_SHORT).show()
+                    hideKeyboard(binding.editText)
+                }
+                else -> showKeyboard(binding.editText)
+            }
         }
 
-        fun disableTextWatcher() {
+        fun removeTextWatcher() {
             if(binding.currencyName.text == responder.name) {
-                println("removing for responder ${binding.currencyName.text}")
                 binding.editText.apply{
                     removeTextChangedListener(textWatcher)
-//                    hideKeyboard(this)
                 }
             }
         }
@@ -192,7 +208,6 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
                 imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
             }
             else {
-                println("configureHolder() removing old textWatcher for ${holder.binding.currencyName.text}")
                 editText.removeTextChangedListener(holder.textWatcher)
                 editText.clearFocus()
             }
@@ -212,7 +227,7 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
         imm.hideSoftInputFromWindow(editText.windowToken, 0)
     }
 
-    private fun computeCurrency(rate: Double): String{
+    private fun computeCurrency(rate: Double): String {
         val df = DecimalFormat("#.##")
         df.roundingMode = RoundingMode.FLOOR
         if(responder.rate == -1.0) return ""
@@ -243,10 +258,10 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
 
     override fun onViewRecycled(holder: SimpleViewHolder) {
         super.onViewRecycled(holder)
-        holder.disableTextWatcher()
+        holder.removeTextWatcher()
     }
 
     interface OnItemClickListener {
-        fun getCurrentFirstViewHolder(position: Int): SimpleViewHolder?
+        fun getCurrentFirstViewHolder(position: Int, value: String): SimpleViewHolder?
     }
 }

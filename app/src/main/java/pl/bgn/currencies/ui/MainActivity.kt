@@ -20,7 +20,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: CurrenciesViewModel
     private lateinit var linearLayoutManager: LinearLayoutManager
     private lateinit var adapter: SimpleRecyclerViewAdapter
-    private var shouldDisplayErrorMsg = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,9 +28,9 @@ class MainActivity : AppCompatActivity() {
         linearLayoutManager = LinearLayoutManager(this)
         adapter = SimpleRecyclerViewAdapter(
             object : SimpleRecyclerViewAdapter.OnItemClickListener {
-                override fun getCurrentFirstViewHolder(position: Int): SimpleRecyclerViewAdapter.SimpleViewHolder? {
+                override fun getCurrentFirstViewHolder(position: Int, value: String): SimpleRecyclerViewAdapter.SimpleViewHolder? {
                     val id = viewModel.getCurrencyUniqueId(0)
-                    viewModel.onResponderChange(position)
+                    viewModel.onResponderChange(position, value)
                     val holder = binding.recyclerView.findViewHolderForItemId(id)
                     return if(holder == null) null
                     else holder as SimpleRecyclerViewAdapter.SimpleViewHolder
@@ -64,11 +63,13 @@ class MainActivity : AppCompatActivity() {
             }
             else if(viewModel.currenciesVisible && it) {
                 showToast(R.string.reconnect)
+                adapter.isConnected = true
                 viewModel.startInterval()
             }
             else if(viewModel.currenciesVisible && !it){
                 showToast(R.string.lost_connection)
                 viewModel.stopFetch()
+                adapter.isConnected = false
             }
         })
         viewModel.currenciesData.observe(this, Observer {

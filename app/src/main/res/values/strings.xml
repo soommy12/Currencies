@@ -5,4 +5,5 @@
     <string name="offline">You\'re offline. Please check your connection.</string>
     <string name="reconnect">Connected</string>
     <string name="lost_connection">Connection lost!</string>
+    <string name="no_connection">No connection</string>
 </resources>

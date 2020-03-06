@@ -25,14 +25,10 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
     private val currenciesList: ArrayList<Model.Currency> = ArrayList()
     private var disposable: Disposable? = null
     private val disposables = CompositeDisposable()
-//    val currenciesVisible = MutableLiveData<Boolean>()
     var currenciesVisible: Boolean = false
-//    val errorMessage = MutableLiveData<String?>()
 
     init {
         responder.value = Model.Currency("EUR", 10.0)
-//        currenciesVisible.value = false
-//        startInterval()
     }
 
     fun startInterval() {
@@ -76,7 +72,6 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
             currenciesList[i].rate = rates.getValue(currenciesList[i].name)
         currenciesData.value = null // to avoid double observer calls
         currenciesData.value = currenciesList
-//        currenciesVisible.value = true
         currenciesVisible = true
     }
 
@@ -85,12 +80,12 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
         super.onCleared()
     }
 
-    fun onResponderChange(position: Int) {
+    fun onResponderChange(position: Int, value: String) {
         if(position != 0) {
             stopFetch()
             val current = currenciesList[position]
             val newResponder
-                    = Model.Currency(current.name, current.rate * responder.value!!.rate)
+                    = Model.Currency(current.name, value.toDouble())
             currenciesList.removeAt(position)
             currenciesList.add(0, newResponder)
             responder.value = newResponder
