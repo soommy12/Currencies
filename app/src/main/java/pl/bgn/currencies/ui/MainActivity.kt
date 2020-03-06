@@ -10,6 +10,7 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.SimpleItemAnimator
+import kotlinx.android.synthetic.main.activity_main.*
 import pl.bgn.currencies.R
 import pl.bgn.currencies.adapters.SimpleRecyclerViewAdapter
 import pl.bgn.currencies.databinding.ActivityMainBinding
@@ -48,17 +49,15 @@ class MainActivity : AppCompatActivity() {
                 with(binding) {
                     if(infoText.isVisible) {
                         infoText.visibility = View.GONE
+                        progressBar.visibility = View.VISIBLE
                         showToast(R.string.reconnect)
                     }
-                    else progressBar.visibility = View.GONE
-                    recyclerView.visibility = View.VISIBLE
                 }
             }
             else if(!viewModel.currenciesVisible && !it) {
                 with(binding) {
                     infoText.visibility = View.VISIBLE
                     progressBar.visibility = View.GONE
-                    recyclerView.visibility = View.GONE
                 }
             }
             else if(viewModel.currenciesVisible && it) {
@@ -70,6 +69,15 @@ class MainActivity : AppCompatActivity() {
                 showToast(R.string.lost_connection)
                 viewModel.stopFetch()
                 adapter.isConnected = false
+            }
+        })
+        viewModel.progressBarVisible.observe(this, Observer {
+            if(it) {
+                progressBar.visibility = View.VISIBLE
+                recyclerView.visibility = View.GONE
+            } else {
+                progressBar.visibility = View.GONE
+                recyclerView.visibility = View.VISIBLE
             }
         })
         viewModel.currenciesData.observe(this, Observer {

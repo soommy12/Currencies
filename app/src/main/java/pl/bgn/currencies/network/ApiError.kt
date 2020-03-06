@@ -12,10 +12,11 @@ class ApiError(error: Throwable){
 
     init{
         when (error) {
+            // if any known error from api occured it can be handler here
             is HttpException -> {
                 val errBodyStr = error.response()?.errorBody()?.string()
                 errBodyStr?.let {
-                    this.msg = "Error occured"
+                    this.msg = "Error from API"
                 }
             }
             is SocketTimeoutException -> this.msg = "The server is under maintenance"

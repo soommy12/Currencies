@@ -5,25 +5,23 @@ import android.text.Editable
 import android.text.InputFilter
 import android.text.Spanned
 import android.text.TextWatcher
+import android.text.method.DigitsKeyListener
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.Toast
-
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
 import pl.bgn.currencies.R
-
 import pl.bgn.currencies.data.Model
 import pl.bgn.currencies.databinding.RecyclerviewItemSimpleBinding
 import pl.bgn.currencies.setCursorAtEnd
 import java.math.RoundingMode
 import java.text.DecimalFormat
 import java.util.regex.Pattern
-
 
 
 class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
@@ -57,14 +55,13 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
                 if(shouldIgnore) return
                 s?.let {
                     shouldIgnore = true
-                    println("AfterTextChanged() for ${binding.currencyName.text} : $s")
                     if(s.toString().isEmpty()) {
                         responder.rate = 0.0
                         binding.editText.setText("0")
                     }
                     else {
-//                        responder.rate = setupResponderValue(s.toString())
                         binding.editText.setText(setupEditTextValue(s))
+                        responder.rate = s.toString().replace(",", ".").toDouble()
                     }
                     notifyItemRangeChanged(1, currencies.size - 1)
                     binding.editText.setCursorAtEnd()
@@ -78,7 +75,6 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
         inner class CurrencyInputFilter: InputFilter {
 
             private val pattern: Pattern = Pattern.compile("[0-9]{0,8}((\\.[0-9]?)?)|(\\.)?")
-//            private val pattern: Pattern = Pattern.compile("[0-9]{0,8}((\\.?[0-9]{0,2})?)|(\\.)?")
 
             override fun filter(
                 source: CharSequence?,
@@ -93,26 +89,11 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
             }
         }
 
-        private fun setupResponderValue(str: String): Double {
-//            var retStr = str.replace(",", ".")
-//            if(retStr.contains(".")) {
-//                var substr = retStr.substringAfter(".")
-//
-//            }
-//            while (retStr[retStr.length - 2].toString() != ".") {
-//                println("retStr: $retStr")
-//                println("Str: ${retStr[str.length - 1]}")
-//                println("Str: ${retStr[str.length - 2]}")
-//                retStr = retStr.dropLast(1)
-//            }
-//            return retStr.toDouble()
-            return str.replace(",", ".").toDouble()
-        }
-
         private fun setupEditTextValue(s: CharSequence): String {
             val str = s.toString()
-            return if(str.startsWith("0")) str.substring(1).replace(",", ".")
-            else str.replace(",", ".")
+            return if(str.startsWith("0") && str.length > 1 && str[1].toString() != ".")
+                str.substring(1)
+            else str
         }
 
         fun bind(name: String, rate: Double) {
@@ -123,19 +104,21 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
                 computedCurrency = computeCurrency(responder.rate)
                 binding.editText.apply {
                     setText(computedCurrency)
+                    setTextColor(ContextCompat.getColor(context, R.color.semiBlack))
                     addTextChangedListener(textWatcher)
                 }
             } else {
                 computedCurrency = computeCurrency(rate)
-                binding.editText.apply {
+                binding.editText.apply{
                     setText(computedCurrency)
+                    if(binding.editText.text.toString() == "0") setTextColor(ContextCompat.getColor(context, R.color.semiGray))
+                    else setTextColor(ContextCompat.getColor(context, R.color.semiBlack))
                 }
             }
             binding.editText.apply {
                 filters = arrayOf(CurrencyInputFilter())
+                keyListener = DigitsKeyListener(true, true)
                 setOnClickListener(this@SimpleViewHolder)
-                if(computedCurrency == "0") setTextColor(ContextCompat.getColor(context, R.color.semiGray))
-                else setTextColor(ContextCompat.getColor(context, R.color.semiBlack))
             }
             itemView.setOnClickListener(this)
         }
@@ -222,7 +205,6 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
     }
 
     private fun hideKeyboard(editText: EditText) {
-        println("hideKeyboard()")
         val imm = editText.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(editText.windowToken, 0)
     }

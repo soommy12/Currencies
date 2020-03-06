@@ -11,7 +11,6 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import pl.bgn.currencies.data.ConnectionLiveData
 import pl.bgn.currencies.data.Model
-import pl.bgn.currencies.network.ApiError
 import pl.bgn.currencies.network.ApiService
 import java.util.concurrent.TimeUnit
 
@@ -21,6 +20,7 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
     private val apiService by lazy { ApiService.create() }
     val currenciesData: MutableLiveData<List<Model.Currency>> = MutableLiveData()
     val responder: MutableLiveData<Model.Currency> = MutableLiveData()
+    val progressBarVisible = MutableLiveData<Boolean>()
     val connectionLiveData = ConnectionLiveData(application)
     private val currenciesList: ArrayList<Model.Currency> = ArrayList()
     private var disposable: Disposable? = null
@@ -52,8 +52,6 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
                 { result -> handleResult(result) },
                 { error ->
                     run {
-//                        errorMessage.value = ApiError(error).msg
-//                        currenciesVisible.value = false
                         currenciesVisible = false
                         Log.e("Currencies", "Problem: $error")
                     }
@@ -73,6 +71,7 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
         currenciesData.value = null // to avoid double observer calls
         currenciesData.value = currenciesList
         currenciesVisible = true
+        progressBarVisible.value = false
     }
 
     override fun onCleared() {
@@ -96,7 +95,6 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
     fun getCurrencyUniqueId(position: Int) = currenciesData.value?.get(position)!!.id
 
     fun stopFetch() {
-        println("stopFetch()")
         disposables.clear()
         disposable?.dispose()
     }
