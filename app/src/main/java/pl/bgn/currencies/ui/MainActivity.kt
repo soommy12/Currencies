@@ -1,10 +1,10 @@
 package pl.bgn.currencies.ui
 
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
@@ -44,22 +44,31 @@ class MainActivity : AppCompatActivity() {
 
         viewModel = ViewModelProviders.of(this).get(CurrenciesViewModel::class.java)
         viewModel.connectionLiveData.observe(this, Observer {
-            if(viewModel.shouldDisplayCurrencies.value == true && it) {
-                Toast.makeText(this@MainActivity, "Connected", Toast.LENGTH_SHORT).show()
+            if(!viewModel.currenciesVisible && it) {
                 viewModel.startInterval()
-            }
-            else if(viewModel.shouldDisplayCurrencies.value == true){
-                Toast.makeText(this@MainActivity, "Connection lost!", Toast.LENGTH_SHORT).show()
-                viewModel.stopFetch()
-            }
-        })
-        viewModel.shouldDisplayCurrencies.observe(this, Observer {
-            with(binding) {
-                if(it) {
-                    infoText.visibility = View.GONE
-                    progressBar.visibility = View.GONE
+                with(binding) {
+                    if(infoText.isVisible) {
+                        infoText.visibility = View.GONE
+                        showToast(R.string.reconnect)
+                    }
+                    else progressBar.visibility = View.GONE
                     recyclerView.visibility = View.VISIBLE
                 }
+            }
+            else if(!viewModel.currenciesVisible && !it) {
+                with(binding) {
+                    infoText.visibility = View.VISIBLE
+                    progressBar.visibility = View.GONE
+                    recyclerView.visibility = View.GONE
+                }
+            }
+            else if(viewModel.currenciesVisible && it) {
+                showToast(R.string.reconnect)
+                viewModel.startInterval()
+            }
+            else if(viewModel.currenciesVisible && !it){
+                showToast(R.string.lost_connection)
+                viewModel.stopFetch()
             }
         })
         viewModel.currenciesData.observe(this, Observer {
@@ -77,5 +86,9 @@ class MainActivity : AppCompatActivity() {
         binding.lifecycleOwner = this
         binding.recyclerView.adapter = adapter
         (binding.recyclerView.itemAnimator as SimpleItemAnimator).supportsChangeAnimations = false
+    }
+
+    private fun showToast(stringId: Int) {
+        Toast.makeText(this@MainActivity, stringId, Toast.LENGTH_SHORT).show()
     }
 }

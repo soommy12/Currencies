@@ -25,21 +25,24 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
     private val currenciesList: ArrayList<Model.Currency> = ArrayList()
     private var disposable: Disposable? = null
     private val disposables = CompositeDisposable()
-    val shouldDisplayCurrencies = MutableLiveData<Boolean>()
-    val errorMessage = MutableLiveData<String?>()
+//    val currenciesVisible = MutableLiveData<Boolean>()
+    var currenciesVisible: Boolean = false
+//    val errorMessage = MutableLiveData<String?>()
 
     init {
         responder.value = Model.Currency("EUR", 10.0)
-        shouldDisplayCurrencies.value = false
-        startInterval()
+//        currenciesVisible.value = false
+//        startInterval()
     }
 
     fun startInterval() {
-        disposable = Observable.interval(0, 1000, TimeUnit.MILLISECONDS)
-            .observeOn(Schedulers.io())
-            .subscribe(
-                { getCurrencies() },
-                { error -> Log.e("Currencies", "Problem from interval: ${error.localizedMessage}") })
+        if(connectionLiveData.value == true) {
+            disposable = Observable.interval(0, 1000, TimeUnit.MILLISECONDS)
+                .observeOn(Schedulers.io())
+                .subscribe(
+                    { getCurrencies() },
+                    { error -> Log.e("Currencies", "Problem from interval: ${error.localizedMessage}") })
+        }
     }
 
     private fun getCurrencies() {
@@ -53,8 +56,9 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
                 { result -> handleResult(result) },
                 { error ->
                     run {
-                        errorMessage.value = ApiError(error).msg
-                        shouldDisplayCurrencies.value = false
+//                        errorMessage.value = ApiError(error).msg
+//                        currenciesVisible.value = false
+                        currenciesVisible = false
                         Log.e("Currencies", "Problem: $error")
                     }
                 },
@@ -72,17 +76,18 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
             currenciesList[i].rate = rates.getValue(currenciesList[i].name)
         currenciesData.value = null // to avoid double observer calls
         currenciesData.value = currenciesList
-        shouldDisplayCurrencies.value = true
+//        currenciesVisible.value = true
+        currenciesVisible = true
     }
 
     override fun onCleared() {
-        disposable?.dispose()
+        stopFetch()
         super.onCleared()
     }
 
     fun onResponderChange(position: Int) {
         if(position != 0) {
-            disposable?.dispose()
+            stopFetch()
             val current = currenciesList[position]
             val newResponder
                     = Model.Currency(current.name, current.rate * responder.value!!.rate)

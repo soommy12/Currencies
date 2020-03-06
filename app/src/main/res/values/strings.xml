@@ -3,4 +3,6 @@
     <string name="rates">Rates</string>
     <string name="full_name_default">Full Name</string>
     <string name="offline">You\'re offline. Please check your connection.</string>
+    <string name="reconnect">Connected</string>
+    <string name="lost_connection">Connection lost!</string>
 </resources>

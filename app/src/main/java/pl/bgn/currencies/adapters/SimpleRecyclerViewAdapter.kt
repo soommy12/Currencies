@@ -37,8 +37,9 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
     }
 
     fun setResponder(responder: Model.Currency) {
+        println("setResponder()")
         this.responder = responder
-//        notifyItemRangeChanged(1, currencies.size - 1)
+        notifyItemRangeChanged(1, currencies.size - 1)
     }
 
     inner class SimpleViewHolder(
@@ -46,15 +47,15 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
     )
         : RecyclerView.ViewHolder(binding.root), View.OnClickListener {
 
-        val textWatcher = object : TextWatcher {
+        private var shouldIgnore = false
 
-            var shouldIgnore = false
+        val textWatcher = object : TextWatcher {
 
             override fun afterTextChanged(s: Editable?) {
                 if(shouldIgnore) return
                 s?.let {
                     shouldIgnore = true
-                    println("AfterTextChanged() : $s")
+                    println("AfterTextChanged() for ${binding.currencyName.text} : $s")
                     if(s.toString().isEmpty()) {
                         responder.rate = 0.0
                         binding.editText.setText("0")
@@ -63,13 +64,13 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
                         responder.rate = setupResponderValue(s.toString())
                         binding.editText.setText(setupEditTextValue(s))
                     }
-                    notifyItemRangeChanged(1, currencies.size - 1)
+//                    notifyItemRangeChanged(1, currencies.size - 1)
                     binding.editText.setCursorAtEnd()
                     shouldIgnore = false
                 }
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { }
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         }
 
         inner class CurrencyInputFilter: InputFilter {
@@ -105,6 +106,7 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
             if(name == responder.name) {
                 computedCurrency = computeCurrency(responder.rate)
                 binding.editText.apply {
+                    println("bind() for $name")
                     setText(computedCurrency)
                     addTextChangedListener(textWatcher)
                     filters = arrayOf(CurrencyInputFilter())
@@ -155,11 +157,12 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
             if(v !is EditText) binding.editText.setCursorAtEnd()
             moveOnClick(
                 adapterPosition, this,
-                clickListener.getCurrentFirstViewHolder(adapterPosition)) //todo crash here when scrolled down
+                clickListener.getCurrentFirstViewHolder(adapterPosition))
         }
 
-        fun removeTextWatcher() {
+        fun disableTextWatcher() {
             if(binding.currencyName.text == responder.name) {
+                println("removing for responder ${binding.currencyName.text}")
                 binding.editText.apply{
                     removeTextChangedListener(textWatcher)
 //                    hideKeyboard(this)
@@ -171,6 +174,7 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
     private fun moveOnClick(from: Int, clickedHolder: SimpleViewHolder, previousHolder: SimpleViewHolder?){
         if(from != 0) {
             notifyItemMoved(from, 0)
+            notifyItemRangeChanged(1, currencies.size - 1)
             configureHolder(previousHolder, false)
             configureHolder(clickedHolder, true)
         } else showKeyboard(clickedHolder.binding.editText)
@@ -181,13 +185,16 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
             val editText = holder.binding.editText
             editText.isFocusableInTouchMode = flag
             if(flag) {
-                editText.addTextChangedListener(holder.textWatcher)
+                println("configureHolder() setting new textWatcher for ${holder.binding.currencyName.text}")
                 editText.filters = arrayOf(holder.CurrencyInputFilter())
                 editText.requestFocus()
                 val imm = editText.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
                 imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+                editText.addTextChangedListener(holder.textWatcher)
+
             }
             else {
+                println("configureHolder() removing old textWatcher for ${holder.binding.currencyName.text}")
                 editText.removeTextChangedListener(holder.textWatcher)
                 editText.filters = arrayOf()
                 editText.clearFocus()
@@ -239,7 +246,7 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
 
     override fun onViewRecycled(holder: SimpleViewHolder) {
         super.onViewRecycled(holder)
-        holder.removeTextWatcher()
+        holder.disableTextWatcher()
     }
 
     interface OnItemClickListener {
