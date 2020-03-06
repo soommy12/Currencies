@@ -103,23 +103,25 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
         fun bind(name: String, rate: Double) {
             val computedCurrency: String
             setFlagAndLongName(name)
+            binding.currencyName.text = name
             if(name == responder.name) {
                 computedCurrency = computeCurrency(responder.rate)
                 binding.editText.apply {
                     println("bind() for $name")
                     setText(computedCurrency)
+                    println("ADDING textWatcher for ${binding.currencyName.text} from binding first item")
                     addTextChangedListener(textWatcher)
-                    filters = arrayOf(CurrencyInputFilter())
+//                    filters = arrayOf(CurrencyInputFilter())
                 }
             } else {
                 computedCurrency = computeCurrency(rate)
                 binding.editText.apply {
                     setText(computedCurrency)
-                    filters = arrayOf()
+//                    filters = arrayOf()
                 }
             }
-            binding.currencyName.text = name
             binding.editText.apply {
+                filters = arrayOf(CurrencyInputFilter())
                 setOnClickListener(this@SimpleViewHolder)
                 if(computedCurrency == "0") setTextColor(ContextCompat.getColor(context, R.color.semiGray))
                 else setTextColor(ContextCompat.getColor(context, R.color.semiBlack))
@@ -185,18 +187,13 @@ class SimpleRecyclerViewAdapter(val clickListener: OnItemClickListener)
             val editText = holder.binding.editText
             editText.isFocusableInTouchMode = flag
             if(flag) {
-                println("configureHolder() setting new textWatcher for ${holder.binding.currencyName.text}")
-                editText.filters = arrayOf(holder.CurrencyInputFilter())
                 editText.requestFocus()
                 val imm = editText.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
                 imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
-                editText.addTextChangedListener(holder.textWatcher)
-
             }
             else {
                 println("configureHolder() removing old textWatcher for ${holder.binding.currencyName.text}")
                 editText.removeTextChangedListener(holder.textWatcher)
-                editText.filters = arrayOf()
                 editText.clearFocus()
             }
         }
