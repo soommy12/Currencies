@@ -1,37 +1,44 @@
 package pl.bgn.currencies.viewmodels
 
+import android.app.Application
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
+import pl.bgn.currencies.data.ConnectionLiveData
 import pl.bgn.currencies.data.Model
 import pl.bgn.currencies.network.ApiService
-import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
 
-class CurrenciesViewModel : ViewModel() {
+
+class CurrenciesViewModel(application: Application) : AndroidViewModel(application) {
 
     private val apiService by lazy { ApiService.create() }
     val currenciesData: MutableLiveData<List<Model.Currency>> = MutableLiveData()
-    var responder: MutableLiveData<Model.Currency> = MutableLiveData()
+    val responder: MutableLiveData<Model.Currency> = MutableLiveData()
+    val progressBarVisible = MutableLiveData<Boolean>()
+    val connectionLiveData = ConnectionLiveData(application)
     private val currenciesList: ArrayList<Model.Currency> = ArrayList()
     private var disposable: Disposable? = null
+    private val disposables = CompositeDisposable()
+    var currenciesVisible: Boolean = false
 
     init {
         responder.value = Model.Currency("EUR", 10.0)
-        startInterval()
     }
 
-    private fun startInterval() {
-        disposable = Observable.interval(1000, 1000, TimeUnit.MILLISECONDS)
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { getCurrencies() },
-                { error -> Log.e("Currencies", "Problem: ${error.message}") })
+    fun startInterval() {
+        if(connectionLiveData.value == true) {
+            disposable = Observable.interval(0, 1000, TimeUnit.MILLISECONDS)
+                .observeOn(Schedulers.io())
+                .subscribe(
+                    { getCurrencies() },
+                    { error -> Log.e("Currencies", "Problem from interval: ${error.localizedMessage}") })
+        }
     }
 
     private fun getCurrencies() {
@@ -43,7 +50,15 @@ class CurrenciesViewModel : ViewModel() {
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
                 { result -> handleResult(result) },
-                { error -> Log.e("Currencies", "Problem: ${error.message}") })
+                { error ->
+                    run {
+                        currenciesVisible = false
+                        Log.e("Currencies", "Problem: $error")
+                    }
+                },
+                {},
+                { d -> disposables.add(d) }
+            )
     }
 
     private fun handleResult(result: Model.Base) {
@@ -52,24 +67,35 @@ class CurrenciesViewModel : ViewModel() {
             currenciesList.add(responder.value!!)
             for((k,v) in rates) currenciesList.add(Model.Currency(k, v))
         } else for(i in 1 until currenciesList.size)
-            currenciesList[i].rate = rates[currenciesList[i].name]!! //todo avoid nulls here
-        currenciesData.value = emptyList()
+            currenciesList[i].rate = rates.getValue(currenciesList[i].name)
+        currenciesData.value = null // to avoid double observer calls
         currenciesData.value = currenciesList
+        currenciesVisible = true
+        progressBarVisible.value = false
     }
 
     override fun onCleared() {
-        disposable?.dispose()
+        stopFetch()
         super.onCleared()
     }
 
-    fun onResponderChange(position: Int) {
+    fun onResponderChange(position: Int, value: String) {
+        if(position != 0) {
+            stopFetch()
+            val current = currenciesList[position]
+            val newResponder
+                    = Model.Currency(current.name, value.toDouble())
+            currenciesList.removeAt(position)
+            currenciesList.add(0, newResponder)
+            responder.value = newResponder
+            startInterval()
+        }
+    }
+
+    fun getCurrencyUniqueId(position: Int) = currenciesData.value?.get(position)!!.id
+
+    fun stopFetch() {
+        disposables.clear()
         disposable?.dispose()
-        val current = currenciesList[position]
-        val newResponder
-                = Model.Currency(current.name, current.rate * responder.value!!.rate)
-        currenciesList.removeAt(position)
-        currenciesList.add(0, newResponder)
-        responder.value = newResponder
-        startInterval()
     }
 }
