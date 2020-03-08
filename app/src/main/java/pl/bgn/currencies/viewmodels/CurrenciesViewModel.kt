@@ -50,11 +50,7 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
                 { result -> handleResult(result) },
-                { error ->
-                    run {
-                        currenciesVisible = false
-                        Log.e("Currencies", "Problem: $error")
-                    }
+                { error -> Log.e("Currencies", "Problem: $error")
                 },
                 {},
                 { d -> disposables.add(d) }
